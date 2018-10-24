@@ -30,11 +30,11 @@ Currently, the contracts support two types of relay operations:
 ### Components
 
 The POA bridge contracts consist of several components:
-* The **Home Bridge** smart contract. This is currently deployed in POA.Network.
+* The [**Home Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicHomeBridge.sol) smart contract. This is currently deployed in POA.Network.
   * `executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator` :
   validator affirm(認證) `transactionHash` 的交易發生過，有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
   * `function submitSignature(bytes signature, bytes message) external onlyValidator`:
-  validator提交對`message`的簽名，`signature`，合約會記錄`signature`，有多少人簽了`message`
+  validator提交對`message`的簽名，`signature`。合約會記錄`signature`，有多少人簽了`message`
   * `setMessagesSigned(bytes32 _hash, bool _status) internal`:
   記錄某個人是否有簽某一項訊息，`_hash`表示某人和某訊息，`_status`即有沒有簽
   * `setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal`:
@@ -43,11 +43,12 @@ The POA bridge contracts consist of several components:
   把數量最左邊的bit設為1，表示有足夠多的人認證或簽名
   * `onExecuteAffirmation(address, uint256) internal returns(bool)`:
   把錢給接收者
-* The **Foreign Bridge** smart contract. This is deployed in the Ethereum Mainnet.
+* The [**Foreign Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicForeignBridge.sol) smart contract. This is deployed in the Ethereum Mainnet.
 * Depending on the type of relay operations the following components are also used:
   * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;
   * in `ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
-* The **Validators** smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
+* The [**Validators**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BridgeValidators.sol) smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
+  * owner可以任意決定validators(加入、移除)，以及validator認證的最少數量
 
 ### Bridge Roles and Responsibilities
 

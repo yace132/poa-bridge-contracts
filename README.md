@@ -33,7 +33,7 @@ The POA bridge contracts consist of several components:
 * The [**Home Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicHomeBridge.sol) smart contract. This is currently deployed in POA.Network.
   * `executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator` :
   validator affirm(認證) `transactionHash` 的交易發生過，有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
-  * `function submitSignature(bytes signature, bytes message) external onlyValidator`:
+  * `submitSignature(bytes signature, bytes message) external onlyValidator`:
   validator提交對`message`的簽名，`signature`。合約會記錄`signature`，有多少人簽了`message`
   * `setMessagesSigned(bytes32 _hash, bool _status) internal`:
   記錄某個人是否有簽某一項訊息，`_hash`表示某人和某訊息，`_status`即有沒有簽
@@ -47,6 +47,10 @@ The POA bridge contracts consist of several components:
 * Depending on the type of relay operations the following components are also used:
   * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;
   * in `ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
+* [Basic Bridge](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicBridge.sol) 
+  * owner可以決定一些參數，如: gas price，單筆交易的最大最小金額，一日交易的量等
+  * `claimTokens(address _token, address _to) public onlyOwner`:
+  owner可以把合約的以太或ERC20 `_token`給`_to`
 * The [**Validators**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BridgeValidators.sol) smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
   * owner可以任意決定validators(加入、移除)，以及validator認證的最少數量
 

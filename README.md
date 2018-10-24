@@ -31,8 +31,18 @@ Currently, the contracts support two types of relay operations:
 
 The POA bridge contracts consist of several components:
 * The **Home Bridge** smart contract. This is currently deployed in POA.Network.
-  * `function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator` :
-  validator affirm(認證) `transactionHash` 的交易發生過，有足夠的validator affirm，就給`recipient` `value`
+  * `executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator` :
+  validator affirm(認證) `transactionHash` 的交易發生過，有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
+  * `function submitSignature(bytes signature, bytes message) external onlyValidator`:
+  validator提交對`message`的簽名，`signature`，合約會記錄`signature`，有多少人簽了`message`
+  * `setMessagesSigned(bytes32 _hash, bool _status) internal`:
+  記錄某個人是否有簽某一項訊息，`_hash`表示某人和某訊息，`_status`即有沒有簽
+  * `setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal`:
+  記錄某個人是否有認證某一項訊息，`_withdrawal`表示某人和某訊息，`_status`即有沒有認證
+  * `markAsProcessed(uint256 _v) internal pure returns(uint256)`:
+  把數量最左邊的bit設為1，表示有足夠多的人認證或簽名
+  * `onExecuteAffirmation(address, uint256) internal returns(bool)`:
+  把錢給接收者
 * The **Foreign Bridge** smart contract. This is deployed in the Ethereum Mainnet.
 * Depending on the type of relay operations the following components are also used:
   * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;

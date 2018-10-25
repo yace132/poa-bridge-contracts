@@ -35,13 +35,15 @@ The POA bridge contracts consist of several components:
     * validator affirm(認證) `transactionHash` 的交易發生過
     * 有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
   * `submitSignature(bytes signature, bytes message) external onlyValidator`
+    * validator在接收`UserRequestForSignature`的event後，開始簽名
     * validator提交對`message`的簽名，`signature`
     * 合約會記錄`signature`，有多少人簽了`message`
     * 當夠多人簽的時候，`emit CollectedSignatures(msg.sender, hashMsg, reqSigs)` 
       * `hashMsg`為訊息的hash 
       * `reqSigs`為至少所需的簽名數
+      * 等待validator接收
   * `setMessagesSigned(bytes32 _hash, bool _status) internal`
-    *記錄某個人是否有簽某一項訊息
+    * 記錄某個人是否有簽某一項訊息
     * `_hash`表示某人和某訊息
     * `_status`即有沒有簽
   * `setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal`
@@ -54,6 +56,7 @@ The POA bridge contracts consist of several components:
     * 把錢給接收者
 * The [**Foreign Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicForeignBridge.sol) smart contract. This is deployed in the Ethereum Mainnet.
   * `executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external`
+    * 接收`CollectedSignatures`之後(也就是說，有足夠的簽名)，任何人都可以觸發relay
     * `Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract())`確認有足夠多的簽名
     * ?validator contract 跟 home chain的相同
     * `(recipient, amount, txHash, contractAddress) = Message.parseMessage(message)`
@@ -86,11 +89,31 @@ The POA bridge contracts consist of several components:
     * 設定bridge的validator跟重要的參數
     * `_validatorContract`: 決定bridge的validators
   * `function () public payable`
-    * callback function
+    * fallback function
     * `setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value))`
       * 把錢放到bridge裡，當天可以花的錢增加
     * `emit UserRequestForSignature(msg.sender, msg.value)`
-      * 發event等oracle收
+      * 發event等validators收
+  * `onExecuteAffirmation(address _recipient, uint256 _value)`
+    * 給 `_recipient` `_value` 的錢
+* ForeignBridgeNativeToErc
+  * `contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge, ERC677Bridge`
+    * 繼承ForeignBridge, 在乙太坊的網路上
+    * `initialize(
+        address _validatorContract,
+        address _erc677token,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _foreignGasPrice,
+        uint256 _requiredBlockConfirmations
+    ) public returns(bool)`
+      * 設定bridge的validator跟重要的參數
+      * `_validatorContract`: 決定bridge的validators
+  * `claimTokensFromErc677(address _token, address _to) external onlyOwner`
+  * `onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool)`
+  * `fireEventOnTokenTransfer(address _from, uint256 _value) internal`
+    * `emit UserRequestForAffirmation(_from, _value)`
 ### Bridge Roles and Responsibilities
 
 Responsibilities and roles of the bridge:

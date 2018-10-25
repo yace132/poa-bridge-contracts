@@ -34,9 +34,10 @@ The POA bridge contracts consist of several components:
   * `executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator` :
   validator affirm(認證) `transactionHash` 的交易發生過，有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
   * `submitSignature(bytes signature, bytes message) external onlyValidator`:
-  validator提交對`message`的簽名，`signature`。合約會記錄`signature`，有多少人簽了`message`
+    * validator提交對`message`的簽名，`signature`。合約會記錄`signature`，有多少人簽了`message`
+    * 當夠多人簽的時候，`emit CollectedSignatures(msg.sender, hashMsg, reqSigs)` `hashMsg`為訊息的hash `reqSigs`為至少所需的簽名數
   * `setMessagesSigned(bytes32 _hash, bool _status) internal`:
-  記錄某個人是否有簽某一項訊息，`_hash`表示某人和某訊息，`_status`即有沒有簽
+  記錄某個人是否有簽某一項訊息，`_hash`表示某人和某訊息，`_status`即有沒有簽。
   * `setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal`:
   記錄某個人是否有認證某一項訊息，`_withdrawal`表示某人和某訊息，`_status`即有沒有認證
   * `markAsProcessed(uint256 _v) internal pure returns(uint256)`:
@@ -44,15 +45,24 @@ The POA bridge contracts consist of several components:
   * `onExecuteAffirmation(address, uint256) internal returns(bool)`:
   把錢給接收者
 * The [**Foreign Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicForeignBridge.sol) smart contract. This is deployed in the Ethereum Mainnet.
+  * `executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external`:
+    * `Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract())`確認有足夠多的簽名
+    * ?validator contract 跟 home chain的相同
+    * `(recipient, amount, txHash, contractAddress) = Message.parseMessage(message)`
+    * `require(contractAddress == address(this))`確定發起者想relay到這個bridge
+    * `require(!relayedMessages(txHash))`確定該交易還沒有被relay過
+    * `require(onExecuteMessage(recipient, amount))` relay
 * Depending on the type of relay operations the following components are also used:
   * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;
   * in `ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
-* [Basic Bridge](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicBridge.sol) 
+* [Basic Bridge](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicBridge.sol): 在鏈上記載bridge規則 
   * owner可以決定一些參數，如: gas price，單筆交易的最大最小金額，一日交易的量等
   * `claimTokens(address _token, address _to) public onlyOwner`:
   owner可以把合約的以太或ERC20 `_token`給`_to`
 * The [**Validators**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BridgeValidators.sol) smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
+  * 在鏈上記載validator的規則
   * owner可以任意決定validators(加入、移除)，以及validator認證的最少數量
+  * 判斷某地址是否為validator
 
 ### Bridge Roles and Responsibilities
 

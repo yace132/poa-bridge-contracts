@@ -31,21 +31,29 @@ Currently, the contracts support two types of relay operations:
 
 The POA bridge contracts consist of several components:
 * The [**Home Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicHomeBridge.sol) smart contract. This is currently deployed in POA.Network.
-  * `executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator` :
-  validator affirm(認證) `transactionHash` 的交易發生過，有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
-  * `submitSignature(bytes signature, bytes message) external onlyValidator`:
-    * validator提交對`message`的簽名，`signature`。合約會記錄`signature`，有多少人簽了`message`
-    * 當夠多人簽的時候，`emit CollectedSignatures(msg.sender, hashMsg, reqSigs)` `hashMsg`為訊息的hash `reqSigs`為至少所需的簽名數
-  * `setMessagesSigned(bytes32 _hash, bool _status) internal`:
-  記錄某個人是否有簽某一項訊息，`_hash`表示某人和某訊息，`_status`即有沒有簽。
-  * `setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal`:
-  記錄某個人是否有認證某一項訊息，`_withdrawal`表示某人和某訊息，`_status`即有沒有認證
-  * `markAsProcessed(uint256 _v) internal pure returns(uint256)`:
-  把數量最左邊的bit設為1，表示有足夠多的人認證或簽名
-  * `onExecuteAffirmation(address, uint256) internal returns(bool)`:
-  把錢給接收者
+  * `executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator`
+    * validator affirm(認證) `transactionHash` 的交易發生過
+    * 有足夠的validator affirm，就執行`onExecuteAffirmation`，給`recipient` `value`的錢
+  * `submitSignature(bytes signature, bytes message) external onlyValidator`
+    * validator提交對`message`的簽名，`signature`
+    * 合約會記錄`signature`，有多少人簽了`message`
+    * 當夠多人簽的時候，`emit CollectedSignatures(msg.sender, hashMsg, reqSigs)` 
+      * `hashMsg`為訊息的hash 
+      * `reqSigs`為至少所需的簽名數
+  * `setMessagesSigned(bytes32 _hash, bool _status) internal`
+    *記錄某個人是否有簽某一項訊息
+    * `_hash`表示某人和某訊息
+    * `_status`即有沒有簽
+  * `setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal`
+    * 記錄某個人是否有認證某一項訊息
+    * `_withdrawal`表示某人和某訊息
+    * `_status`即有沒有認證
+  * `markAsProcessed(uint256 _v) internal pure returns(uint256)`
+    * 把數量最左邊的bit設為1，表示有足夠多的人認證或簽名
+  * `onExecuteAffirmation(address, uint256) internal returns(bool)`
+    * 把錢給接收者
 * The [**Foreign Bridge**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicForeignBridge.sol) smart contract. This is deployed in the Ethereum Mainnet.
-  * `executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external`:
+  * `executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external`
     * `Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract())`確認有足夠多的簽名
     * ?validator contract 跟 home chain的相同
     * `(recipient, amount, txHash, contractAddress) = Message.parseMessage(message)`
@@ -57,13 +65,32 @@ The POA bridge contracts consist of several components:
   * in `ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
 * [Basic Bridge](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BasicBridge.sol): 在鏈上記載bridge規則 
   * owner可以決定一些參數，如: gas price，單筆交易的最大最小金額，一日交易的量等
-  * `claimTokens(address _token, address _to) public onlyOwner`:
-  owner可以把合約的以太或ERC20 `_token`給`_to`
+  * `claimTokens(address _token, address _to) public onlyOwner`
+    * owner可以把合約的以太或ERC20 `_token`給`_to`
 * The [**Validators**](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/BridgeValidators.sol) smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
   * 在鏈上記載validator的規則
   * owner可以任意決定validators(加入、移除)，以及validator認證的最少數量
   * 判斷某地址是否為validator
-
+* [HomeBridgeNativeToErc](https://github.com/poanetwork/poa-bridge-contracts/blob/master/contracts/upgradeable_contracts/native_to_erc20/HomeBridgeNativeToErc.sol)
+  * `contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge`
+    * 繼承HomeBridge, 在POA的網路上
+  * `initialize (
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations
+    ) public
+      returns(bool)`
+    * 設定bridge的validator跟重要的參數
+    * `_validatorContract`: 決定bridge的validators
+  * `function () public payable`
+    * callback function
+    * `setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value))`
+      * 把錢放到bridge裡，當天可以花的錢增加
+    * `emit UserRequestForSignature(msg.sender, msg.value)`
+      * 發event等oracle收
 ### Bridge Roles and Responsibilities
 
 Responsibilities and roles of the bridge:
